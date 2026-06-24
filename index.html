@@ -449,17 +449,18 @@
   // ═══════════════════════════════════════
   async function loadData() {
     if (!supabase) return;
-
-    // 加载愿望
-    const { data: wishesData } = await supabase
-      .from('wishes').select('*').order('created_at', { ascending: true });
-    if (wishesData) {
-      wishMessages = wishesData;
-      totalWishes = wishesData.length;
+    const { count } = await supabase
+      .from('wishes').select('*', { count: 'exact', head: true });
+    if (count !== null) {
+      totalWishes = count;
       counter.textContent = totalWishes;
     }
-
-    // 加载未读瓶子数
+    // 加载愿望墙数据
+    const { data: wishesData } = await supabase
+      .from('wishes').select('*').order('created_at', { ascending: true }).limit(500);
+    if (wishesData) {
+      wishMessages = wishesData;
+    }
     await refreshUnreadCount();
   }
 
@@ -498,7 +499,7 @@
         (payload) => {
           if (localInsertIds.has(payload.new.id)) { localInsertIds.delete(payload.new.id); return; }
           wishMessages.push(payload.new);
-          totalWishes = wishMessages.length;
+          totalWishes++;
           counter.textContent = totalWishes;
           spawnFloatingWish(payload.new.text);
           if (wallOverlay.classList.contains('open')) renderWall();
@@ -532,6 +533,9 @@
   async function addWish(text) {
     spawnFloatingWish(text);
     if (supabase) {
+      // 先用临时 ID 防止重复
+      const tempId = 'temp_' + Date.now() + '_' + Math.random();
+      localInsertIds.add(tempId);
       const { data, error } = await supabase
         .from('wishes')
         .insert({ text, created_at: new Date().toISOString() })
@@ -542,6 +546,7 @@
         totalWishes = wishMessages.length;
         counter.textContent = totalWishes;
       }
+      localInsertIds.delete(tempId);
     } else {
       totalWishes++;
       counter.textContent = totalWishes;
@@ -577,6 +582,8 @@
     const msg = bottleMsg.value.trim();
     if (!msg) { showToast('💬 写点什么再扔吧～'); return; }
     if (supabase) {
+      const tempId = 'temp_' + Date.now() + '_' + Math.random();
+      localInsertIds.add(tempId);
       const { data, error } = await supabase
         .from('messages')
         .insert({ text: msg, created_at: new Date().toISOString(), revealed: false })
@@ -587,6 +594,7 @@
         updateBottleBadge();
         updateBottlePanel();
       }
+      localInsertIds.delete(tempId);
     }
     bottleMsg.value = '';
     showToast('🌊 瓶子已投入大海！');
@@ -712,10 +720,20 @@
   async function init() {
     await loadData();
     setupRealtime();
-    // 初始欢迎愿望
-    setTimeout(() => addWish('心想事成'), 600);
-    setTimeout(() => addWish('天天开心'), 1200);
-    setTimeout(() => addWish('万事如意'), 1800);
+    // 如果数据库已有愿望，不再添加初始愿望
+    if (totalWishes === 0) {
+      setTimeout(() => addWish('心想事成'), 600);
+      setTimeout(() => addWish('天天开心'), 1200);
+      setTimeout(() => addWish('万事如意'), 1800);
+    }
+    // 每 30 秒从服务器校准一次数字
+    setInterval(async () => {
+      if (!supabase) return;
+      const { count } = await supabase
+        .from('wishes').select('*', { count: 'exact', head: true });
+      if (count !== null) { totalWishes = count; counter.textContent = totalWishes; }
+      await refreshUnreadCount();
+    }, 30000);
   }
   init();
 })();
