@@ -649,16 +649,7 @@
         <span class="history-text">${escapeHtml(w.text)}</span>
         <span class="history-time">${w.time}</span>
       </div>
-    `).join('') + `
-      <button class="clear-history" id="btnClearHistory">🗑 清空记录</button>
-    `;
-    document.getElementById('btnClearHistory').addEventListener('click', () => {
-      cloudWishes = [];
-      saveToCloud();
-      renderHistory();
-      updateHistoryBadge();
-      showToast('记录已清空 ✨');
-    });
+    `).join('');
   }
   function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
