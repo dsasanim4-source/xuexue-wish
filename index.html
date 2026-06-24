@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>❄️ 雪雪心想事成</title>
+<style>
+  :root {
+    --pink-100: #fff0f5;
+    --pink-200: #ffe0ec;
+    --pink-300: #ffb6c1;
+    --pink-400: #ff85a2;
+    --pink-500: #e8718d;
+    --pink-600: #d45d7a;
+    --rose-gold: #c08081;
+    --white: #fffafc;
+    --glass: rgba(255, 255, 255, 0.18);
+    --glass-border: rgba(255, 255, 255, 0.35);
+    --shadow: 0 8px 32px rgba(200, 100, 130, 0.15);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 25%, #f48fb1 50%, #f8bbd0 75%, #fce4ec 100%);
+    background-size: 400% 400%;
+    animation: bgShift 20s ease infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  @keyframes bgShift {
+    0%, 100% { background-position: 0% 50%; }
+    25% { background-position: 100% 0%; }
+    50% { background-position: 100% 100%; }
+    75% { background-position: 0% 100%; }
+  }
+
+  /* 背景光点 */
+  .bg-sparkles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .sparkle {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: sparkleFloat 6s ease-in-out infinite;
+    opacity: 0;
+  }
+  @keyframes sparkleFloat {
+    0% { opacity: 0; transform: translateY(0) scale(0); }
+    10% { opacity: 1; }
+    40% { opacity: 0.6; }
+    60% { opacity: 0.2; }
+    100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
+  }
+
+  /* 主容器 */
+  .main-container {
+    position: relative;
+    z-index: 1;
+    width: 520px;
+    max-width: 95vw;
+  }
+
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    padding: 44px 36px 36px;
+    box-shadow: var(--shadow), 0 0 80px rgba(255, 150, 180, 0.12) inset;
+    text-align: center;
+    position: relative;
+    overflow: visible;
+  }
+
+  /* 卡片顶部装饰 */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    translate: -50% 0;
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--rose-gold), transparent);
+    border-radius: 2px;
+  }
+
+  .title-area {
+    margin-bottom: 8px;
+  }
+  .icon-row {
+    font-size: 40px;
+    line-height: 1;
+    margin-bottom: 8px;
+    animation: gentleBounce 2s ease-in-out infinite;
+  }
+  @keyframes gentleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .title {
+    font-size: 30px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #d45d7a, #c08081, #d45d7a);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+    letter-spacing: 4px;
+  }
+  @keyframes shimmer {
+    to { background-position: 200% center; }
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #c08081;
+    margin-top: 4px;
+    letter-spacing: 2px;
+    font-weight: 300;
+  }
+
+  /* 输入区 */
+  .input-group {
+    display: flex;
+    gap: 10px;
+    margin: 28px 0 20px;
+  }
+  .wish-input {
+    flex: 1;
+    padding: 14px 18px;
+    border: 1.5px solid rgba(200, 130, 150, 0.3);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 15px;
+    color: #5a3e4b;
+    outline: none;
+    transition: all 0.35s ease;
+    font-family: inherit;
+    letter-spacing: 1px;
+  }
+  .wish-input::placeholder {
+    color: #c0a0ab;
+    letter-spacing: 1px;
+  }
+  .wish-input:focus {
+    border-color: #e8718d;
+    box-shadow: 0 0 0 4px rgba(232, 113, 141, 0.1);
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .btn-submit {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #e8718d, #d45d7a);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.35s ease;
+    box-shadow: 0 4px 18px rgba(212, 93, 122, 0.35);
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(212, 93, 122, 0.45);
+  }
+  .btn-submit:active {
+    transform: scale(0.96);
+  }
+
+  /* 预设愿望 */
+  .preset-label {
+    font-size: 12px;
+    color: #c0a0ab;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+  .preset-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .preset-tag {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(200, 140, 155, 0.35);
+    background: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    color: #9a6b78;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    font-family: inherit;
+  }
+  .preset-tag:hover {
+    background: rgba(232, 113, 141, 0.15);
+    border-color: #e8718d;
+    color: #d45d7a;
+    transform: translateY(-1px);
+  }
+
+  /* 愿望计数 */
+  .wish-count {
+    font-size: 12px;
+    color: #c0a0ab;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+  .wish-count span {
+    color: #d45d7a;
+    font-weight: 600;
+  }
+
+  /* 画布层 - 雪花愿望 */
+  .snow-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景光点 -->
+<div class="bg-sparkles" id="bgSparkles"></div>
+
+<!-- 雪花愿望画布 -->
+<canvas class="snow-canvas" id="snowCanvas"></canvas>
+
+<!-- 主卡片 -->
+<div class="main-container">
+  <div class="card">
+    <div class="title-area">
+      <div class="icon-row">❄️</div>
+      <div class="title">雪雪心想事成</div>
+      <div class="subtitle">许下心愿 · 如雪花般飘落</div>
+    </div>
+
+    <div class="input-group">
+      <input
+        class="wish-input"
+        id="wishInput"
+        type="text"
+        placeholder="写下你的愿望…"
+        maxlength="30"
+        autocomplete="off"
+      />
+      <button class="btn-submit" id="btnSubmit">✨ 许愿</button>
+    </div>
+
+    <div class="preset-label">— 点击快速许愿 —</div>
+    <div class="preset-tags" id="presetTags">
+      <span class="preset-tag" data-wish="天天开心">天天开心</span>
+      <span class="preset-tag" data-wish="万事如意">万事如意</span>
+      <span class="preset-tag" data-wish="暴富暴美">暴富暴美</span>
+      <span class="preset-tag" data-wish="身体健康">身体健康</span>
+      <span class="preset-tag" data-wish="好运连连">好运连连</span>
+      <span class="preset-tag" data-wish="梦想成真">梦想成真</span>
+    </div>
+
+    <div class="wish-count">
+      已许下 <span id="wishCounter">0</span> 个心愿
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ── DOM ──
+  const input = document.getElementById('wishInput');
+  const btn = document.getElementById('btnSubmit');
+  const counter = document.getElementById('wishCounter');
+  const canvas = document.getElementById('snowCanvas');
+  const ctx = canvas.getContext('2d');
+  const bgSparkles = document.getElementById('bgSparkles');
+
+  // ── 雪花愿望数组 ──
+  let snowflakes = [];
+  let wishCount = 0;
+
+  // ── Canvas 尺寸 ──
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ── 雪花类 ──
+  class Snowflake {
+    constructor(text, x, y) {
+      this.text = text;
+      this.x = x ?? Math.random() * canvas.width;
+      this.y = y ?? -60 - Math.random() * 200;
+      this.size = 12 + Math.random() * 6; // 字号
+      this.speedY = 0.6 + Math.random() * 1.4; // 下落速度
+      this.speedX = (Math.random() - 0.5) * 0.8; // 水平飘动
+      this.wobbleAmp = 0.3 + Math.random() * 0.7; // 摇摆幅度
+      this.wobbleSpeed = 0.01 + Math.random() * 0.03;
+      this.wobbleOffset = Math.random() * Math.PI * 2;
+      this.rotation = (Math.random() - 0.5) * 0.5; // 旋转弧度
+      this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+      this.opacity = 0.7 + Math.random() * 0.3;
+      this.scale = 0.8 + Math.random() * 0.4;
+      this.frame = 0;
+      this.alive = true;
+      // 粉色系颜色池
+      this.colors = [
+        '#e8718d', '#d45d7a', '#f48fb1', '#ff85a2',
+        '#c08081', '#f8bbd0', '#ffb6c1', '#e8a0b4',
+        '#f0c0d0', '#e891a0'
+      ];
+      this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
+    }
+
+    update() {
+      this.frame++;
+      this.y += this.speedY;
+      this.x += this.speedX + Math.sin(this.frame * this.wobbleSpeed + this.wobbleOffset) * this.wobbleAmp;
+      this.rotation += this.rotationSpeed;
+
+      // 超出底部判定死亡
+      if (this.y > canvas.height + 80) {
+        this.alive = false;
+      }
+      // 超出左右边界回弹
+      if (this.x < -80) this.x = canvas.width + 40;
+      if (this.x > canvas.width + 80) this.x = -40;
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+      ctx.scale(this.scale, this.scale);
+      ctx.globalAlpha = this.opacity;
+
+      // 绘制雪花 ❄ 符号
+      ctx.font = `${this.size * 2.2}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillText('❄', 0, 0);
+
+      // 绘制愿望文字
+      ctx.font = `600 ${this.size}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 发光效果
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = this.color;
+      ctx.fillText(this.text, 0, -this.size * 0.3);
+
+      // 再画一层白底增强高级感
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillText(this.text, 0, -this.size * 0.3);
+
+      ctx.restore();
+    }
+  }
+
+  // ── 添加新愿望雪花 ──
+  function addWish(text) {
+    const count = 3 + Math.floor(Math.random() * 4); // 一次 3~6 片
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * canvas.width;
+      const y = -60 - Math.random() * 300;
+      snowflakes.push(new Snowflake(text, x, y));
+    }
+    wishCount++;
+    counter.textContent = wishCount;
+  }
+
+  // ── 提交愿望 ──
+  function submitWish() {
+    const text = input.value.trim();
+    if (!text) return;
+    if (text.length > 30) {
+      shakeInput();
+      return;
+    }
+    addWish(text);
+    input.value = '';
+    input.focus();
+  }
+
+  function shakeInput() {
+    input.style.animation = 'none';
+    input.offsetHeight;
+    input.style.animation = 'shake 0.4s ease';
+    setTimeout(() => { input.style.animation = ''; }, 400);
+  }
+
+  // ── 事件绑定 ──
+  btn.addEventListener('click', submitWish);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitWish();
+  });
+
+  // 预设标签点击
+  document.getElementById('presetTags').addEventListener('click', (e) => {
+    const tag = e.target.closest('.preset-tag');
+    if (!tag) return;
+    const wish = tag.dataset.wish;
+    addWish(wish);
+  });
+
+  // ── 背景光点 ──
+  function createSparkles() {
+    bgSparkles.innerHTML = '';
+    for (let i = 0; i < 35; i++) {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      const size = 2 + Math.random() * 5;
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = (60 + Math.random() * 40) + '%';
+      s.style.animationDelay = Math.random() * 6 + 's';
+      s.style.animationDuration = (4 + Math.random() * 8) + 's';
+      bgSparkles.appendChild(s);
+    }
+  }
+  createSparkles();
+
+  // ── 动画循环 ──
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    snowflakes = snowflakes.filter(s => {
+      s.update();
+      s.draw(ctx);
+      return s.alive;
+    });
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // ── shake keyframes ──
+  const shakeStyle = document.createElement('style');
+  shakeStyle.textContent = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+  `;
+  document.head.appendChild(shakeStyle);
+
+  // ── 初始欢迎雪花 ──
+  setTimeout(() => {
+    addWish('心想事成');
+    addWish('天天开心');
+  }, 600);
+  setTimeout(() => addWish('万事如意'), 1200);
+})();
+</script>
+</body>
+</html>
