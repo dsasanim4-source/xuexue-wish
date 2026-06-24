@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>❄️ 雪雪心想事成</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -32,37 +33,32 @@
     overflow: hidden;
     font-family: 'PingFang SC','Microsoft YaHei','Hiragino Sans GB',sans-serif;
     background: linear-gradient(170deg, #fff5f7 0%, #ffe8ee 20%, #ffd9e2 40%, #ffe4eb 60%, #fdd8e0 80%, #fff0f3 100%);
-    background-size: 100% 100%;
     display: flex; justify-content: center; align-items: center;
     position: relative;
     -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none; user-select: none;
   }
+
+  /* ─── 背景柔光 ─── */
+  .bg-glow {
+    position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; opacity:0.35;
+  }
+  .bg-glow.g1 { width:400px; height:400px; background:#ffcdd6; top:-80px; left:-60px; }
+  .bg-glow.g2 { width:350px; height:350px; background:#fbc0cb; bottom:-60px; right:-80px; animation: glowPulse 8s ease-in-out infinite; }
+  .bg-glow.g3 { width:250px; height:250px; background:#ffdee5; top:40%; left:50%; translate:-50% -50%; animation: glowPulse 6s ease-in-out infinite reverse; }
+  @keyframes glowPulse { 0%,100% { transform:scale(1); opacity:0.3; } 50% { transform:scale(1.2); opacity:0.45; } }
 
   /* ─── 背景花瓣 ─── */
   .petal-container { position:fixed; inset:0; pointer-events:none; z-index:0; }
   .petal {
     position:absolute; font-size:18px; opacity:0;
-    animation: petalFall linear infinite;
-    filter: blur(0.5px);
+    animation: petalFall linear infinite; filter: blur(0.5px);
   }
   @keyframes petalFall {
     0%   { opacity:0; transform: translate(0,0) rotate(0deg) scale(0.6); }
     5%   { opacity:0.7; }
     80%  { opacity:0.4; }
     100% { opacity:0; transform: translate(var(--dx), 105vh) rotate(var(--dr)) scale(1); }
-  }
-
-  /* ─── 背景柔光 ─── */
-  .bg-glow {
-    position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0;
-    opacity:0.35;
-  }
-  .bg-glow.g1 { width:400px; height:400px; background:#ffcdd6; top:-80px; left:-60px; }
-  .bg-glow.g2 { width:350px; height:350px; background:#fbc0cb; bottom:-60px; right:-80px; animation: glowPulse 8s ease-in-out infinite; }
-  .bg-glow.g3 { width:250px; height:250px; background:#ffdee5; top:40%; left:50%; translate:-50% -50%; animation: glowPulse 6s ease-in-out infinite reverse; }
-  @keyframes glowPulse {
-    0%,100% { transform:scale(1); opacity:0.3; }
-    50%     { transform:scale(1.2); opacity:0.45; }
   }
 
   /* ─── 主卡片 ─── */
@@ -75,8 +71,7 @@
     border-radius: 32px;
     padding: 40px 32px 32px;
     box-shadow: var(--shadow), 0 0 60px rgba(250,180,200,0.08) inset;
-    text-align: center;
-    position: relative;
+    text-align: center; position: relative;
   }
   .card::before {
     content:''; position:absolute; top:0; left:50%; translate:-50% 0;
@@ -85,10 +80,7 @@
   }
 
   .title-icon { font-size:42px; line-height:1; margin-bottom:6px; animation: floatIcon 2.5s ease-in-out infinite; }
-  @keyframes floatIcon {
-    0%,100% { transform: translateY(0); }
-    50%     { transform: translateY(-5px); }
-  }
+  @keyframes floatIcon { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
   .title {
     font-size:28px; font-weight:700;
     background: linear-gradient(135deg, #e05d7c, #d48a96, #e05d7c);
@@ -130,10 +122,22 @@
   .wish-count { font-size:12px; color:var(--text-light); margin-top:8px; letter-spacing:1px; }
   .wish-count span { color:#e05d7c; font-weight:600; }
 
-  /* ─── 雪花画布 ─── */
-  #snowCanvas { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  /* ─── 浮动愿望（上升） ─── */
+  .floating-wishes { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  .floating-wish {
+    position:absolute; font-size:15px; font-weight:600; letter-spacing:2px;
+    white-space:nowrap; opacity:0;
+    animation: wishRise 8s ease-out forwards;
+    text-shadow: 0 0 12px rgba(240,122,149,0.5);
+  }
+  @keyframes wishRise {
+    0%   { opacity:0; transform: translateY(0) scale(0.5); }
+    10%  { opacity:1; }
+    70%  { opacity:0.8; }
+    100% { opacity:0; transform: translateY(-380px) scale(1.1); }
+  }
 
-  /* ─── 左下角：愿望记录 ─── */
+  /* ─── 左下角：愿望墙 ─── */
   .float-btn-left {
     position:fixed; bottom:28px; left:28px; z-index:20;
     width:52px; height:52px; border-radius:50%;
@@ -143,12 +147,6 @@
     font-size:22px; transition:all .35s; color:#e05d7c;
   }
   .float-btn-left:hover { transform:scale(1.08); box-shadow:var(--shadow-lg); }
-  .float-btn-left .badge {
-    position:absolute; top:-4px; right:-4px; min-width:18px; height:18px;
-    border-radius:9px; background:#e05d7c; color:#fff; font-size:10px;
-    display:flex; align-items:center; justify-content:center; padding:0 5px;
-    font-weight:600; line-height:1;
-  }
 
   /* ─── 右下角：漂流瓶 ─── */
   .float-btn-right {
@@ -160,12 +158,13 @@
     font-size:22px; transition:all .35s; color:#e05d7c;
   }
   .float-btn-right:hover { transform:scale(1.08); box-shadow:var(--shadow-lg); }
-  .float-btn-right .badge {
+  .bottle-badge {
     position:absolute; top:-4px; right:-4px; min-width:18px; height:18px;
     border-radius:9px; background:#e05d7c; color:#fff; font-size:10px;
     display:flex; align-items:center; justify-content:center; padding:0 5px;
     font-weight:600; line-height:1;
   }
+  .bottle-badge:empty { display:none; }
 
   /* ─── 面板通用 ─── */
   .panel-overlay {
@@ -175,20 +174,17 @@
     opacity:0; pointer-events:none; transition:opacity .35s;
   }
   .panel-overlay.open { opacity:1; pointer-events:auto; }
-
   .panel {
     background:rgba(255,248,250,0.92); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
-    border-radius:28px 28px 0 0; width:100%; max-width:480px; max-height:70vh;
+    border-radius:28px 28px 0 0; width:100%; max-width:480px; max-height:72vh;
     display:flex; flex-direction:column; overflow:hidden;
     transform:translateY(100%); transition:transform .4s cubic-bezier(.23,1,.32,1);
     box-shadow:0 -8px 40px rgba(200,120,140,0.15);
   }
   .panel-overlay.open .panel { transform:translateY(0); }
-
   .panel-header {
     display:flex; align-items:center; justify-content:space-between;
-    padding:20px 24px 12px; border-bottom:1px solid rgba(220,180,190,0.25);
-    flex-shrink:0;
+    padding:20px 24px 12px; border-bottom:1px solid rgba(220,180,190,0.25); flex-shrink:0;
   }
   .panel-header h3 { font-size:17px; color:var(--text); letter-spacing:2px; font-weight:600; }
   .panel-close {
@@ -199,79 +195,49 @@
   .panel-close:hover { background:rgba(220,150,165,0.35); color:var(--text); }
   .panel-body { flex:1; overflow-y:auto; padding:16px 24px 24px; }
 
-  /* ─── 愿望记录列表 ─── */
-  .history-empty { text-align:center; padding:40px 20px; color:var(--text-light); font-size:14px; letter-spacing:1px; }
-  .history-empty .icon { font-size:48px; display:block; margin-bottom:12px; }
-  .history-item {
+  /* ─── 愿望墙 ─── */
+  .wall-empty { text-align:center; padding:40px 20px; color:var(--text-light); font-size:14px; letter-spacing:1px; }
+  .wall-item {
     display:flex; align-items:center; gap:12px; padding:13px 16px;
-    border-radius:16px; background:rgba(255,255,255,0.5);
-    margin-bottom:8px; transition:all .3s;
+    border-radius:16px; background:rgba(255,255,255,0.5); margin-bottom:8px;
     border:1px solid rgba(220,180,190,0.2);
   }
-  .history-item:hover { background:rgba(255,255,255,0.7); }
-  .history-num { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#f7a0b5,#e05d7c); color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .history-text { flex:1; font-size:14px; color:var(--text); letter-spacing:1px; }
-  .history-time { font-size:11px; color:var(--text-light); flex-shrink:0; }
-  .clear-history {
-    display:block; margin:16px auto 0; padding:8px 24px; border-radius:20px;
-    border:1px solid rgba(220,160,175,0.4); background:transparent;
-    color:var(--text-light); font-size:12px; cursor:pointer; letter-spacing:1px;
-    transition:all .3s; font-family:inherit;
-  }
-  .clear-history:hover { background:rgba(240,122,149,0.1); border-color:#f07a95; color:#e05d7c; }
+  .wall-num { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#f7a0b5,#e05d7c); color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .wall-text { flex:1; font-size:14px; color:var(--text); letter-spacing:1px; }
+  .wall-time { font-size:11px; color:var(--text-light); flex-shrink:0; }
 
-  /* ─── 漂流瓶 ─── */
-  .bottle-modes { display:flex; gap:12px; margin-bottom:20px; }
-  .bottle-mode-btn {
-    flex:1; padding:14px; border-radius:18px; border:1.5px solid rgba(220,160,175,0.3);
-    background:rgba(255,255,255,0.45); cursor:pointer; text-align:center;
-    transition:all .3s; font-family:inherit; letter-spacing:1px;
-  }
-  .bottle-mode-btn .icon { font-size:28px; display:block; margin-bottom:6px; }
-  .bottle-mode-btn .label { font-size:13px; color:var(--text); font-weight:500; }
-  .bottle-mode-btn .hint { font-size:11px; color:var(--text-light); margin-top:2px; }
-  .bottle-mode-btn:hover { border-color:var(--pink-400); background:rgba(255,255,255,0.65); }
-  .bottle-mode-btn.active { border-color:var(--pink-500); background:rgba(240,122,149,0.08); }
-
-  .bottle-section { display:none; }
-  .bottle-section.active { display:block; }
-
-  .bottle-textarea {
-    width:100%; height:100px; padding:14px 16px; border-radius:16px;
-    border:1.5px solid rgba(220,170,185,0.35); background:rgba(255,255,255,0.5);
-    font-size:14px; color:var(--text); resize:none; outline:none;
-    font-family:inherit; letter-spacing:1px; transition:all .35s;
-  }
-  .bottle-textarea:focus { border-color:var(--pink-500); box-shadow:0 0 0 4px rgba(240,122,149,0.06); }
-  .bottle-textarea::placeholder { color:#c8a8b4; }
-
-  .bottle-throw-btn {
+  /* ─── 漂流瓶面板 ─── */
+  .bottle-unread-section { text-align:center; margin-bottom:20px; }
+  .bottle-unread-count { font-size:48px; font-weight:200; color:var(--pink-500); letter-spacing:2px; }
+  .bottle-unread-label { font-size:12px; color:var(--text-light); letter-spacing:1px; }
+  .bottle-open-btn {
     display:block; margin:14px auto 0; padding:12px 32px; border-radius:22px;
     border:none; background:linear-gradient(135deg,#f07a95,#e05d7c);
     color:#fff; font-size:14px; font-weight:600; cursor:pointer;
     letter-spacing:2px; transition:all .35s; font-family:inherit;
     box-shadow:0 4px 16px rgba(224,93,124,0.25);
   }
-  .bottle-throw-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(224,93,124,0.35); }
-
-  .bottle-catch-area { text-align:center; }
-  .bottle-visual {
-    font-size:80px; display:block; margin:10px 0; cursor:pointer;
-    animation: bottleFloat 3s ease-in-out infinite; transition:transform .3s;
+  .bottle-open-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(224,93,124,0.35); }
+  .bottle-open-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .bottle-divider { width:60px; height:1px; background:linear-gradient(90deg,transparent,rgba(210,160,175,0.4),transparent); margin:20px auto; }
+  .bottle-input-section { text-align:center; }
+  .bottle-input-label { font-size:12px; color:var(--text-light); letter-spacing:2px; margin-bottom:10px; }
+  .bottle-input {
+    width:100%; padding:13px 16px; border-radius:16px;
+    border:1.5px solid rgba(220,170,185,0.35); background:rgba(255,255,255,0.5);
+    font-size:14px; color:var(--text); outline:none; transition:all .35s;
+    font-family:inherit; letter-spacing:1px; resize:none; height:80px;
   }
-  .bottle-visual:hover { transform:scale(1.1); }
-  @keyframes bottleFloat {
-    0%,100% { transform:translateY(0) rotate(-2deg); }
-    50%     { transform:translateY(-8px) rotate(2deg); }
+  .bottle-input:focus { border-color:var(--pink-500); box-shadow:0 0 0 4px rgba(240,122,149,0.06); }
+  .bottle-input::placeholder { color:#c8a8b4; }
+  .bottle-send-btn {
+    margin-top:10px; padding:10px 28px; border-radius:20px;
+    border:none; background:linear-gradient(135deg,#f07a95,#e05d7c);
+    color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+    letter-spacing:2px; transition:all .35s; font-family:inherit;
+    box-shadow:0 4px 16px rgba(224,93,124,0.2);
   }
-  .bottle-visual.shaking { animation: bottleShake .5s ease-in-out; }
-  @keyframes bottleShake {
-    0%,100% { transform:translateX(0) rotate(0); }
-    25%     { transform:translateX(-8px) rotate(-5deg); }
-    50%     { transform:translateX(8px) rotate(5deg); }
-    75%     { transform:translateX(-4px) rotate(-3deg); }
-  }
-  .bottle-catch-hint { font-size:13px; color:var(--text-light); letter-spacing:1px; }
+  .bottle-send-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(224,93,124,0.3); }
 
   /* ─── 漂流瓶揭示弹窗 ─── */
   .reveal-overlay {
@@ -281,7 +247,6 @@
     opacity:0; pointer-events:none; transition:opacity .4s;
   }
   .reveal-overlay.open { opacity:1; pointer-events:auto; }
-
   .reveal-card {
     background:rgba(255,248,250,0.95); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
     border-radius:24px; padding:36px 28px; width:340px; max-width:90vw;
@@ -289,13 +254,8 @@
     border:1px solid rgba(255,220,230,0.5);
     animation: revealPop .45s cubic-bezier(.23,1,.32,1);
   }
-  @keyframes revealPop {
-    0% { transform:scale(0.8) translateY(20px); opacity:0; }
-    100% { transform:scale(1) translateY(0); opacity:1; }
-  }
-  .reveal-card.burning {
-    animation: burnAway .8s ease-in forwards;
-  }
+  @keyframes revealPop { 0% { transform:scale(0.8) translateY(20px); opacity:0; } 100% { transform:scale(1) translateY(0); opacity:1; } }
+  .reveal-card.burning { animation: burnAway .8s ease-in forwards; }
   @keyframes burnAway {
     0% { transform:scale(1); opacity:1; filter:blur(0); }
     30% { transform:scale(1.05); opacity:0.9; filter:blur(1px); }
@@ -305,12 +265,7 @@
   .reveal-msg { font-size:16px; color:var(--text); letter-spacing:2px; line-height:1.6; margin-bottom:6px; }
   .reveal-time { font-size:11px; color:var(--text-light); margin-bottom:18px; }
   .reveal-burn-hint { font-size:12px; color:#e05d7c; letter-spacing:1px; animation: blinkHint 1.5s ease-in-out infinite; }
-  @keyframes blinkHint {
-    0%,100% { opacity:1; }
-    50%     { opacity:0.4; }
-  }
-
-  .bottle-empty { text-align:center; padding:20px; color:var(--text-light); font-size:13px; letter-spacing:1px; }
+  @keyframes blinkHint { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
   /* ─── Toast ─── */
   .toast {
@@ -335,8 +290,8 @@
 <!-- 背景花瓣 -->
 <div class="petal-container" id="petalContainer"></div>
 
-<!-- 雪花画布 -->
-<canvas id="snowCanvas"></canvas>
+<!-- 浮动愿望层 -->
+<div class="floating-wishes" id="floatingWishes"></div>
 
 <!-- 主卡片 -->
 <div class="main-container">
@@ -361,28 +316,26 @@
   </div>
 </div>
 
-<!-- 左下角：愿望记录 -->
-<button class="float-btn-left" id="btnHistory" title="愿望记录">
-  💝<span class="badge" id="historyBadge" style="display:none">0</span>
-</button>
+<!-- 左下角：愿望墙 -->
+<button class="float-btn-left" id="btnWishWall" title="愿望墙">💝</button>
 
 <!-- 右下角：漂流瓶 -->
-<button class="float-btn-right" id="btnBottle" title="阅后即焚漂流瓶">
-  🍾<span class="badge" id="bottleBadge" style="display:none">0</span>
+<button class="float-btn-right" id="btnBottle" title="漂流瓶">
+  🍾<span class="bottle-badge" id="bottleBadge"></span>
 </button>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- 愿望记录面板 -->
-<div class="panel-overlay" id="historyOverlay">
+<!-- 愿望墙面板 -->
+<div class="panel-overlay" id="wallOverlay">
   <div class="panel">
     <div class="panel-header">
-      <h3>💝 愿望记录</h3>
-      <button class="panel-close" id="btnHistoryClose">✕</button>
+      <h3>💝 愿望墙</h3>
+      <button class="panel-close" id="btnWallClose">✕</button>
     </div>
-    <div class="panel-body" id="historyBody">
-      <div class="history-empty"><span class="icon">💫</span>还没有许下愿望呢～</div>
+    <div class="panel-body" id="wallBody">
+      <div class="wall-empty">💫 还没有愿望呢，快去许一个吧～</div>
     </div>
   </div>
 </div>
@@ -391,30 +344,22 @@
 <div class="panel-overlay" id="bottleOverlay">
   <div class="panel">
     <div class="panel-header">
-      <h3>🍾 阅后即焚漂流瓶</h3>
+      <h3>🍾 漂流瓶</h3>
       <button class="panel-close" id="btnBottleClose">✕</button>
     </div>
     <div class="panel-body">
-      <div class="bottle-modes">
-        <button class="bottle-mode-btn active" data-mode="throw">
-          <span class="icon">📝</span><span class="label">扔瓶子</span><span class="hint">写下心事投进大海</span>
-        </button>
-        <button class="bottle-mode-btn" data-mode="catch">
-          <span class="icon">🎣</span><span class="label">捡瓶子</span><span class="hint">随机捞取一个漂流瓶</span>
-        </button>
+      <!-- 未读瓶子 -->
+      <div class="bottle-unread-section">
+        <div class="bottle-unread-count" id="bottleUnreadCount">0</div>
+        <div class="bottle-unread-label">个未打开的漂流瓶</div>
+        <button class="bottle-open-btn" id="bottleOpenBtn" disabled>📜 打开一个随机漂流瓶</button>
       </div>
+      <div class="bottle-divider"></div>
       <!-- 扔瓶子 -->
-      <div class="bottle-section active" id="sectionThrow">
-        <textarea class="bottle-textarea" id="bottleMsg" placeholder="写下你想说的话…（最多100字）" maxlength="100"></textarea>
-        <button class="bottle-throw-btn" id="btnThrow">🌊 投入大海</button>
-      </div>
-      <!-- 捡瓶子 -->
-      <div class="bottle-section" id="sectionCatch">
-        <div class="bottle-catch-area">
-          <span class="bottle-visual" id="bottleVisual">🍾</span>
-          <p class="bottle-catch-hint">👆 点击瓶子捞取</p>
-          <p class="bottle-empty" id="bottleEmpty" style="display:none">🌊 海面上还没有漂流瓶…<br>先去扔几个吧！</p>
-        </div>
+      <div class="bottle-input-section">
+        <div class="bottle-input-label">📝 写下你的心事，投入大海</div>
+        <textarea class="bottle-input" id="bottleMsg" placeholder="写下你想说的话…（最多100字）" maxlength="100"></textarea>
+        <button class="bottle-send-btn" id="btnThrow">🌊 投入大海</button>
       </div>
     </div>
   </div>
@@ -433,146 +378,174 @@
 <script>
 (function(){
   // ═══════════════════════════════════════
-  //  云端数据同步（GitHub API · 跨设备互通）
+  //  Supabase 配置
   // ═══════════════════════════════════════
-  const TOKEN   = '__GH_TOKEN_PLACEHOLDER__';
-  const REPO    = 'dsasanim4-source/xuexue-wish';
-  const RAW_URL = `https://raw.githubusercontent.com/${REPO}/main/data/store.json`;
-  const API_URL = `https://api.github.com/repos/${REPO}/contents/data/store.json`;
+  const SUPABASE_URL = 'https://mdqphmajsymhvfjjqxzo.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kcXBobWFqc3ltaHZmampxeHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNzgxNDAsImV4cCI6MjA5Nzc1NDE0MH0.CvwkzduVhhkpBinc588DjS_ZuUz_Q6F9ULjIgkGjBug';
+  let supabase = null;
+  let localInsertIds = new Set();
+  let localUpdateIds = new Set();
 
-  let cloudBottles = [];
-  let cloudWishes = [];
-  let currentSha = null;
-  let syncing = false;
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch(e) {
+    console.warn('Supabase 初始化失败，使用本地存储');
+  }
 
-  async function loadFromCloud() {
-    try {
-      const res = await fetch(RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
-      if (!res.ok) throw new Error('fetch failed');
-      const data = await res.json();
-      cloudBottles = data.bottles || [];
-      cloudWishes = data.wishes || [];
-      localStorage.setItem('xuexue_wishes', JSON.stringify(cloudWishes));
-      localStorage.setItem('xuexue_bottles', JSON.stringify(cloudBottles));
-      return true;
-    } catch(e) {
-      cloudWishes = JSON.parse(localStorage.getItem('xuexue_wishes') || '[]');
-      cloudBottles = JSON.parse(localStorage.getItem('xuexue_bottles') || '[]');
-      return false;
+  // ═══════════════════════════════════════
+  //  DOM 元素
+  // ═══════════════════════════════════════
+  const input       = document.getElementById('wishInput');
+  const btn         = document.getElementById('btnSubmit');
+  const counter     = document.getElementById('wishCounter');
+  const floatingWishes = document.getElementById('floatingWishes');
+  const bottleBadge = document.getElementById('bottleBadge');
+  const bottleUnreadCount = document.getElementById('bottleUnreadCount');
+  const bottleOpenBtn = document.getElementById('bottleOpenBtn');
+  const bottleMsg   = document.getElementById('bottleMsg');
+  const revealOverlay = document.getElementById('revealOverlay');
+  const revealCard  = document.getElementById('revealCard');
+  const revealMsg   = document.getElementById('revealMsg');
+  const revealTime  = document.getElementById('revealTime');
+  const toast       = document.getElementById('toast');
+
+  let wishMessages = [];
+  let totalWishes = 0;
+  let totalUnread = 0;
+  let currentReveal = null;
+
+  // ═══════════════════════════════════════
+  //  Toast
+  // ═══════════════════════════════════════
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg; toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // ═══════════════════════════════════════
+  //  浮动愿望（上升）
+  // ═══════════════════════════════════════
+  const pinkColors = ['#f07a95','#e05d7c','#f48fb1','#f89aaf','#d48a96','#ffb8c6','#e891a0'];
+
+  function spawnFloatingWish(text) {
+    const el = document.createElement('span');
+    el.className = 'floating-wish';
+    el.textContent = text;
+    el.style.color = pinkColors[Math.floor(Math.random() * pinkColors.length)];
+    const card = document.querySelector('.card');
+    const rect = card.getBoundingClientRect();
+    el.style.left = (rect.left + rect.width/2 + (Math.random() - 0.5) * 200) + 'px';
+    el.style.top = (rect.top + rect.height/2 + (Math.random() - 0.5) * 60) + 'px';
+    el.style.animationDuration = (6 + Math.random() * 6) + 's';
+    el.style.animationDelay = '0s';
+    floatingWishes.appendChild(el);
+    setTimeout(() => el.remove(), 13000);
+  }
+
+  // ═══════════════════════════════════════
+  //  数据加载
+  // ═══════════════════════════════════════
+  async function loadData() {
+    if (!supabase) return;
+
+    // 加载愿望
+    const { data: wishesData } = await supabase
+      .from('wishes').select('*').order('created_at', { ascending: true });
+    if (wishesData) {
+      wishMessages = wishesData;
+      totalWishes = wishesData.length;
+      counter.textContent = totalWishes;
+    }
+
+    // 加载未读瓶子数
+    await refreshUnreadCount();
+  }
+
+  async function refreshUnreadCount() {
+    if (!supabase) return;
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('revealed', false);
+    if (!error && count !== null) {
+      totalUnread = count;
+      updateBottleBadge();
+      updateBottlePanel();
     }
   }
 
-  async function saveToCloud() {
-    if (syncing || !TOKEN || TOKEN.startsWith('__')) return; // token 未注入时跳过
-    syncing = true;
-    try {
-      if (!currentSha) {
-        const getRes = await fetch(API_URL, { cache: 'no-store' });
-        if (getRes.ok) { const meta = await getRes.json(); currentSha = meta.sha; }
+  function updateBottleBadge() {
+    bottleBadge.textContent = totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : '';
+  }
+  function updateBottlePanel() {
+    bottleUnreadCount.textContent = totalUnread;
+    bottleOpenBtn.disabled = totalUnread === 0;
+  }
+
+  // ═══════════════════════════════════════
+  //  实时订阅
+  // ═══════════════════════════════════════
+  function setupRealtime() {
+    if (!supabase) return;
+
+    // 订阅新愿望
+    supabase
+      .channel('wishes-realtime')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'wishes' },
+        (payload) => {
+          if (localInsertIds.has(payload.new.id)) { localInsertIds.delete(payload.new.id); return; }
+          wishMessages.push(payload.new);
+          totalWishes = wishMessages.length;
+          counter.textContent = totalWishes;
+          spawnFloatingWish(payload.new.text);
+          if (wallOverlay.classList.contains('open')) renderWall();
+        }
+      )
+      .subscribe();
+
+    // 订阅新瓶子
+    supabase
+      .channel('messages-realtime')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          if (localInsertIds.has(payload.new.id)) { localInsertIds.delete(payload.new.id); return; }
+          if (!payload.new.revealed) { totalUnread++; updateBottleBadge(); updateBottlePanel(); }
+        }
+      )
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        (payload) => {
+          if (localUpdateIds.has(payload.new.id)) { localUpdateIds.delete(payload.new.id); return; }
+          if (payload.new.revealed && !payload.old.revealed) { totalUnread = Math.max(0, totalUnread - 1); updateBottleBadge(); updateBottlePanel(); }
+        }
+      )
+      .subscribe();
+  }
+
+  // ═══════════════════════════════════════
+  //  许愿
+  // ═══════════════════════════════════════
+  async function addWish(text) {
+    spawnFloatingWish(text);
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('wishes')
+        .insert({ text, created_at: new Date().toISOString() })
+        .select().single();
+      if (data) {
+        localInsertIds.add(data.id);
+        wishMessages.push(data);
+        totalWishes = wishMessages.length;
+        counter.textContent = totalWishes;
       }
-      const content = JSON.stringify({ bottles: cloudBottles, wishes: cloudWishes }, null, 2);
-      const body = {
-        message: '🔄 同步数据',
-        content: btoa(unescape(encodeURIComponent(content))),
-        sha: currentSha
-      };
-      const putRes = await fetch(API_URL, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
-        body: JSON.stringify(body)
-      });
-      if (putRes.ok) {
-        const result = await putRes.json();
-        currentSha = result.content.sha;
-        localStorage.setItem('xuexue_wishes', JSON.stringify(cloudWishes));
-        localStorage.setItem('xuexue_bottles', JSON.stringify(cloudBottles));
-      } else if (putRes.status === 409) {
-        currentSha = null;
-        await loadFromCloud();
-      }
-    } catch(e) { /* 静默失败 */ }
-    syncing = false;
-  }
-
-  // ═══════════════════════════════════════
-  //  雪花愿望系统
-  // ═══════════════════════════════════════
-  const input    = document.getElementById('wishInput');
-  const btn      = document.getElementById('btnSubmit');
-  const counter  = document.getElementById('wishCounter');
-  const canvas   = document.getElementById('snowCanvas');
-  const ctx      = canvas.getContext('2d');
-
-  let snowflakes = [];
-  let wishCount  = 0;
-
-  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  window.addEventListener('resize', resize); resize();
-
-  const pinkColors = ['#f07a95','#e05d7c','#f48fb1','#f89aaf','#d48a96','#f8bbd0','#ffb8c6','#e891a0','#f0c0d0','#e8a0b4'];
-
-  class Snowflake {
-    constructor(text, x, y) {
-      this.text = text;
-      this.x = x ?? Math.random() * canvas.width;
-      this.y = y ?? -60 - Math.random() * 200;
-      this.size = 14 + Math.random() * 6;
-      this.speedY = 0.2 + Math.random() * 0.35;
-      this.speedX = (Math.random() - 0.5) * 0.4;
-      this.wobbleAmp = 0.2 + Math.random() * 0.4;
-      this.wobbleSpeed = 0.008 + Math.random() * 0.02;
-      this.wobbleOffset = Math.random() * Math.PI * 2;
-      this.rotation = (Math.random() - 0.5) * 0.3;
-      this.rotationSpeed = (Math.random() - 0.5) * 0.01;
-      this.opacity = 0.65 + Math.random() * 0.3;
-      this.scale = 0.85 + Math.random() * 0.35;
-      this.frame = 0;
-      this.alive = true;
-      this.color = pinkColors[Math.floor(Math.random() * pinkColors.length)];
+    } else {
+      totalWishes++;
+      counter.textContent = totalWishes;
     }
-    update() {
-      this.frame++;
-      this.y += this.speedY;
-      this.x += this.speedX + Math.sin(this.frame * this.wobbleSpeed + this.wobbleOffset) * this.wobbleAmp;
-      this.rotation += this.rotationSpeed;
-      if (this.y > canvas.height + 80) this.alive = false;
-      if (this.x < -80) this.x = canvas.width + 40;
-      if (this.x > canvas.width + 80) this.x = -40;
-    }
-    draw(ctx) {
-      ctx.save();
-      ctx.translate(this.x, this.y);
-      ctx.rotate(this.rotation);
-      ctx.scale(this.scale, this.scale);
-      ctx.globalAlpha = this.opacity;
-      ctx.font = `${this.size * 2.2}px "PingFang SC","Microsoft YaHei",sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.fillText('❄', 0, 0);
-      ctx.font = `600 ${this.size}px "PingFang SC","Microsoft YaHei",sans-serif`;
-      ctx.shadowColor = this.color; ctx.shadowBlur = 8;
-      ctx.fillStyle = this.color;
-      ctx.fillText(this.text, 0, -this.size * 0.3);
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.fillText(this.text, 0, -this.size * 0.3);
-      ctx.restore();
-    }
-  }
-
-  function addWish(text) {
-    const count = 1 + Math.floor(Math.random() * 2); // 一次 1~2 片
-    for (let i = 0; i < count; i++) {
-      snowflakes.push(new Snowflake(text, Math.random() * canvas.width, -60 - Math.random() * 300));
-    }
-    wishCount++;
-    counter.textContent = wishCount;
-    // 保存到云端
-    const record = { text, time: new Date().toLocaleString('zh-CN') };
-    cloudWishes.unshift(record);
-    if (cloudWishes.length > 50) cloudWishes = cloudWishes.slice(0, 50);
-    saveToCloud();
-    updateHistoryBadge();
   }
 
   function submitWish() {
@@ -597,16 +570,115 @@
     addWish(tag.dataset.wish);
   });
 
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    snowflakes = snowflakes.filter(s => { s.update(); s.draw(ctx); return s.alive; });
-    requestAnimationFrame(animate);
-  }
-  animate();
+  // ═══════════════════════════════════════
+  //  漂流瓶 - 扔瓶子
+  // ═══════════════════════════════════════
+  document.getElementById('btnThrow').addEventListener('click', async () => {
+    const msg = bottleMsg.value.trim();
+    if (!msg) { showToast('💬 写点什么再扔吧～'); return; }
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ text: msg, created_at: new Date().toISOString(), revealed: false })
+        .select().single();
+      if (data) {
+        localInsertIds.add(data.id);
+        totalUnread++;
+        updateBottleBadge();
+        updateBottlePanel();
+      }
+    }
+    bottleMsg.value = '';
+    showToast('🌊 瓶子已投入大海！');
+  });
 
-  const shakeStyle = document.createElement('style');
-  shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
-  document.head.appendChild(shakeStyle);
+  // ═══════════════════════════════════════
+  //  漂流瓶 - 打开一个随机瓶子
+  // ═══════════════════════════════════════
+  bottleOpenBtn.addEventListener('click', async () => {
+    if (!supabase || totalUnread === 0) return;
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('revealed', false)
+      .order('created_at', { ascending: true })
+      .limit(1).single();
+    if (!data) { showToast('🌊 没有未打开的瓶子'); return; }
+    // 标记为已读
+    const { error } = await supabase
+      .from('messages')
+      .update({ revealed: true })
+      .eq('id', data.id);
+    if (!error) {
+      localUpdateIds.add(data.id);
+      totalUnread = Math.max(0, totalUnread - 1);
+      updateBottleBadge();
+      updateBottlePanel();
+    }
+    // 揭示
+    currentReveal = data;
+    revealMsg.textContent = data.text;
+    revealTime.textContent = '🕐 ' + new Date(data.created_at).toLocaleString('zh-CN');
+    revealCard.classList.remove('burning');
+    revealOverlay.classList.add('open');
+  });
+
+  // 阅后即焚
+  revealOverlay.addEventListener('click', () => {
+    if (!currentReveal) return;
+    revealCard.classList.add('burning');
+    setTimeout(() => {
+      revealOverlay.classList.remove('open');
+      currentReveal = null;
+    }, 800);
+  });
+
+  // ═══════════════════════════════════════
+  //  愿望墙面板
+  // ═══════════════════════════════════════
+  const wallOverlay = document.getElementById('wallOverlay');
+  const wallBody    = document.getElementById('wallBody');
+
+  function renderWall() {
+    if (wishMessages.length === 0) {
+      wallBody.innerHTML = '<div class="wall-empty">💫 还没有愿望呢，快去许一个吧～</div>';
+      return;
+    }
+    wallBody.innerHTML = [...wishMessages].reverse().map((w, i) => `
+      <div class="wall-item">
+        <span class="wall-num">${wishMessages.length - i}</span>
+        <span class="wall-text">${escapeHtml(w.text)}</span>
+        <span class="wall-time">${new Date(w.created_at).toLocaleString('zh-CN')}</span>
+      </div>
+    `).join('');
+  }
+  function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  document.getElementById('btnWishWall').addEventListener('click', () => {
+    renderWall();
+    wallOverlay.classList.add('open');
+  });
+  document.getElementById('btnWallClose').addEventListener('click', () => {
+    wallOverlay.classList.remove('open');
+  });
+  wallOverlay.addEventListener('click', e => {
+    if (e.target === wallOverlay) wallOverlay.classList.remove('open');
+  });
+
+  // ═══════════════════════════════════════
+  //  漂流瓶面板
+  // ═══════════════════════════════════════
+  const bottleOverlay = document.getElementById('bottleOverlay');
+  document.getElementById('btnBottle').addEventListener('click', () => {
+    updateBottlePanel();
+    bottleOverlay.classList.add('open');
+  });
+  document.getElementById('btnBottleClose').addEventListener('click', () => {
+    bottleOverlay.classList.remove('open');
+  });
+  bottleOverlay.addEventListener('click', e => {
+    if (e.target === bottleOverlay) bottleOverlay.classList.remove('open');
+  });
 
   // ═══════════════════════════════════════
   //  背景花瓣
@@ -631,163 +703,20 @@
   setInterval(createPetal, 3000);
 
   // ═══════════════════════════════════════
-  //  Toast
+  //  初始化
   // ═══════════════════════════════════════
-  const toast = document.getElementById('toast');
-  let toastTimer;
-  function showToast(msg) {
-    toast.textContent = msg; toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
-  }
+  const shakeStyle = document.createElement('style');
+  shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}';
+  document.head.appendChild(shakeStyle);
 
-  // ═══════════════════════════════════════
-  //  愿望记录面板
-  // ═══════════════════════════════════════
-  const historyOverlay = document.getElementById('historyOverlay');
-  const historyBody    = document.getElementById('historyBody');
-  const historyBadge   = document.getElementById('historyBadge');
-
-  function updateHistoryBadge() {
-    const len = cloudWishes.length;
-    if (len > 0) { historyBadge.style.display = 'flex'; historyBadge.textContent = len > 99 ? '99+' : len; }
-    else { historyBadge.style.display = 'none'; }
-  }
-  function renderHistory() {
-    if (cloudWishes.length === 0) {
-      historyBody.innerHTML = '<div class="history-empty"><span class="icon">💫</span>还没有许下愿望呢～</div>';
-      return;
-    }
-    historyBody.innerHTML = cloudWishes.map((w, i) => `
-      <div class="history-item">
-        <span class="history-num">${i + 1}</span>
-        <span class="history-text">${escapeHtml(w.text)}</span>
-        <span class="history-time">${w.time}</span>
-      </div>
-    `).join('');
-  }
-  function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-  document.getElementById('btnHistory').addEventListener('click', () => {
-    renderHistory();
-    historyOverlay.classList.add('open');
-  });
-  document.getElementById('btnHistoryClose').addEventListener('click', () => {
-    historyOverlay.classList.remove('open');
-  });
-  historyOverlay.addEventListener('click', e => {
-    if (e.target === historyOverlay) historyOverlay.classList.remove('open');
-  });
-
-  // ═══════════════════════════════════════
-  //  漂流瓶系统（阅后即焚 · 云端同步）
-  // ═══════════════════════════════════════
-  const bottleOverlay  = document.getElementById('bottleOverlay');
-  const bottleBadge    = document.getElementById('bottleBadge');
-  const revealOverlay  = document.getElementById('revealOverlay');
-  const revealCard     = document.getElementById('revealCard');
-  const revealMsg      = document.getElementById('revealMsg');
-  const revealTime     = document.getElementById('revealTime');
-  const bottleVisual   = document.getElementById('bottleVisual');
-  const bottleEmpty    = document.getElementById('bottleEmpty');
-  const sectionThrow   = document.getElementById('sectionThrow');
-  const sectionCatch   = document.getElementById('sectionCatch');
-  const bottleMsg      = document.getElementById('bottleMsg');
-
-  let currentBottle = null;
-
-  function updateBottleBadge() {
-    const len = cloudBottles.length;
-    if (len > 0) { bottleBadge.style.display = 'flex'; bottleBadge.textContent = len > 99 ? '99+' : len; }
-    else { bottleBadge.style.display = 'none'; }
-    if (len === 0) { bottleEmpty.style.display = 'block'; bottleVisual.style.display = 'none'; }
-    else { bottleEmpty.style.display = 'none'; bottleVisual.style.display = 'block'; }
-  }
-
-  // 模式切换
-  document.querySelectorAll('.bottle-mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.bottle-mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const mode = btn.dataset.mode;
-      if (mode === 'throw') { sectionThrow.classList.add('active'); sectionCatch.classList.remove('active'); }
-      else { sectionCatch.classList.add('active'); sectionThrow.classList.remove('active'); updateBottleBadge(); }
-    });
-  });
-
-  // 扔瓶子
-  document.getElementById('btnThrow').addEventListener('click', () => {
-    const msg = bottleMsg.value.trim();
-    if (!msg) { showToast('💬 写点什么再扔吧～'); return; }
-    cloudBottles.push({ text: msg, time: new Date().toLocaleString('zh-CN') });
-    if (cloudBottles.length > 100) cloudBottles = cloudBottles.slice(-100);
-    saveToCloud();
-    bottleMsg.value = '';
-    updateBottleBadge();
-    showToast('🌊 瓶子已投入大海！');
-  });
-
-  // 捡瓶子 - 点击瓶子
-  bottleVisual.addEventListener('click', () => {
-    if (cloudBottles.length === 0) { showToast('🌊 还没有漂流瓶哦～'); return; }
-    bottleVisual.classList.add('shaking');
-    setTimeout(() => bottleVisual.classList.remove('shaking'), 500);
-    const idx = Math.floor(Math.random() * cloudBottles.length);
-    currentBottle = cloudBottles[idx];
-    revealMsg.textContent = currentBottle.text;
-    revealTime.textContent = '🕐 ' + currentBottle.time;
-    revealCard.classList.remove('burning');
-    revealOverlay.classList.add('open');
-    // 阅后即焚：从数组中删除并同步云端
-    cloudBottles.splice(idx, 1);
-    saveToCloud();
-    updateBottleBadge();
-  });
-
-  // 点击揭示弹窗 → 阅后即焚
-  revealOverlay.addEventListener('click', () => {
-    if (!currentBottle) return;
-    revealCard.classList.add('burning');
-    setTimeout(() => {
-      revealOverlay.classList.remove('open');
-      currentBottle = null;
-    }, 800);
-  });
-
-  // 漂流瓶面板开关
-  document.getElementById('btnBottle').addEventListener('click', () => {
-    updateBottleBadge();
-    bottleOverlay.classList.add('open');
-  });
-  document.getElementById('btnBottleClose').addEventListener('click', () => {
-    bottleOverlay.classList.remove('open');
-  });
-  bottleOverlay.addEventListener('click', e => {
-    if (e.target === bottleOverlay) bottleOverlay.classList.remove('open');
-  });
-
-  // ═══════════════════════════════════════
-  //  初始化：从云端加载数据
-  // ═══════════════════════════════════════
   async function init() {
-    await loadFromCloud();
-    wishCount = cloudWishes.length;
-    counter.textContent = wishCount;
-    updateHistoryBadge();
-    updateBottleBadge();
-    // 初始欢迎雪花
-    setTimeout(() => { addWish('心想事成'); addWish('天天开心'); }, 600);
-    setTimeout(() => addWish('万事如意'), 1200);
-    // 定时从云端刷新（同步其他设备的变更）
-    setInterval(async () => {
-      await loadFromCloud();
-      wishCount = cloudWishes.length;
-      counter.textContent = wishCount;
-      updateHistoryBadge();
-      updateBottleBadge();
-    }, 8000);
+    await loadData();
+    setupRealtime();
+    // 初始欢迎愿望
+    setTimeout(() => addWish('心想事成'), 600);
+    setTimeout(() => addWish('天天开心'), 1200);
+    setTimeout(() => addWish('万事如意'), 1800);
   }
-
   init();
 })();
 </script>
