@@ -433,6 +433,53 @@
 <script>
 (function(){
   // ═══════════════════════════════════════
+  //  云端数据同步（jsonblob.com · 跨设备互通）
+  // ═══════════════════════════════════════
+  const BLOB_ID  = '019ef7a5-08b9-7b71-8859-1d54dbd438e2';
+  const BLOB_URL = `https://jsonblob.com/api/jsonBlob/${BLOB_ID}`;
+
+  let cloudBottles = [];
+  let cloudWishes = [];
+  let syncing = false;
+
+  // 从云端加载数据
+  async function loadFromCloud() {
+    try {
+      const res = await fetch(BLOB_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      cloudBottles = data.bottles || [];
+      cloudWishes = data.wishes || [];
+      localStorage.setItem('xuexue_wishes', JSON.stringify(cloudWishes));
+      localStorage.setItem('xuexue_bottles', JSON.stringify(cloudBottles));
+      return true;
+    } catch(e) {
+      cloudWishes = JSON.parse(localStorage.getItem('xuexue_wishes') || '[]');
+      cloudBottles = JSON.parse(localStorage.getItem('xuexue_bottles') || '[]');
+      return false;
+    }
+  }
+
+  // 保存到云端
+  async function saveToCloud() {
+    if (syncing) return;
+    syncing = true;
+    try {
+      const content = JSON.stringify({ bottles: cloudBottles, wishes: cloudWishes });
+      const res = await fetch(BLOB_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: content
+      });
+      if (res.ok) {
+        localStorage.setItem('xuexue_wishes', JSON.stringify(cloudWishes));
+        localStorage.setItem('xuexue_bottles', JSON.stringify(cloudBottles));
+      }
+    } catch(e) { /* 静默失败，下次重试 */ }
+    syncing = false;
+  }
+
+  // ═══════════════════════════════════════
   //  雪花愿望系统
   // ═══════════════════════════════════════
   const input    = document.getElementById('wishInput');
@@ -443,7 +490,6 @@
 
   let snowflakes = [];
   let wishCount  = 0;
-  let wishHistory = JSON.parse(localStorage.getItem('xuexue_wishes') || '[]');
 
   function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
   window.addEventListener('resize', resize); resize();
@@ -506,11 +552,11 @@
     }
     wishCount++;
     counter.textContent = wishCount;
-    // 保存到历史
+    // 保存到云端
     const record = { text, time: new Date().toLocaleString('zh-CN') };
-    wishHistory.unshift(record);
-    if (wishHistory.length > 50) wishHistory = wishHistory.slice(0, 50);
-    localStorage.setItem('xuexue_wishes', JSON.stringify(wishHistory));
+    cloudWishes.unshift(record);
+    if (cloudWishes.length > 50) cloudWishes = cloudWishes.slice(0, 50);
+    saveToCloud();
     updateHistoryBadge();
   }
 
@@ -588,16 +634,16 @@
   const historyBadge   = document.getElementById('historyBadge');
 
   function updateHistoryBadge() {
-    const len = wishHistory.length;
+    const len = cloudWishes.length;
     if (len > 0) { historyBadge.style.display = 'flex'; historyBadge.textContent = len > 99 ? '99+' : len; }
     else { historyBadge.style.display = 'none'; }
   }
   function renderHistory() {
-    if (wishHistory.length === 0) {
+    if (cloudWishes.length === 0) {
       historyBody.innerHTML = '<div class="history-empty"><span class="icon">💫</span>还没有许下愿望呢～</div>';
       return;
     }
-    historyBody.innerHTML = wishHistory.map((w, i) => `
+    historyBody.innerHTML = cloudWishes.map((w, i) => `
       <div class="history-item">
         <span class="history-num">${i + 1}</span>
         <span class="history-text">${escapeHtml(w.text)}</span>
@@ -607,8 +653,8 @@
       <button class="clear-history" id="btnClearHistory">🗑 清空记录</button>
     `;
     document.getElementById('btnClearHistory').addEventListener('click', () => {
-      wishHistory = [];
-      localStorage.setItem('xuexue_wishes', '[]');
+      cloudWishes = [];
+      saveToCloud();
       renderHistory();
       updateHistoryBadge();
       showToast('记录已清空 ✨');
@@ -628,7 +674,7 @@
   });
 
   // ═══════════════════════════════════════
-  //  漂流瓶系统（阅后即焚）
+  //  漂流瓶系统（阅后即焚 · 云端同步）
   // ═══════════════════════════════════════
   const bottleOverlay  = document.getElementById('bottleOverlay');
   const bottleBadge    = document.getElementById('bottleBadge');
@@ -642,11 +688,10 @@
   const sectionCatch   = document.getElementById('sectionCatch');
   const bottleMsg      = document.getElementById('bottleMsg');
 
-  let bottles = JSON.parse(localStorage.getItem('xuexue_bottles') || '[]');
-  let currentBottle = null; // 当前打开的瓶子
+  let currentBottle = null;
 
   function updateBottleBadge() {
-    const len = bottles.length;
+    const len = cloudBottles.length;
     if (len > 0) { bottleBadge.style.display = 'flex'; bottleBadge.textContent = len > 99 ? '99+' : len; }
     else { bottleBadge.style.display = 'none'; }
     if (len === 0) { bottleEmpty.style.display = 'block'; bottleVisual.style.display = 'none'; }
@@ -668,9 +713,9 @@
   document.getElementById('btnThrow').addEventListener('click', () => {
     const msg = bottleMsg.value.trim();
     if (!msg) { showToast('💬 写点什么再扔吧～'); return; }
-    bottles.push({ text: msg, time: new Date().toLocaleString('zh-CN') });
-    if (bottles.length > 100) bottles = bottles.slice(-100);
-    localStorage.setItem('xuexue_bottles', JSON.stringify(bottles));
+    cloudBottles.push({ text: msg, time: new Date().toLocaleString('zh-CN') });
+    if (cloudBottles.length > 100) cloudBottles = cloudBottles.slice(-100);
+    saveToCloud();
     bottleMsg.value = '';
     updateBottleBadge();
     showToast('🌊 瓶子已投入大海！');
@@ -678,28 +723,24 @@
 
   // 捡瓶子 - 点击瓶子
   bottleVisual.addEventListener('click', () => {
-    if (bottles.length === 0) { showToast('🌊 还没有漂流瓶哦～'); return; }
-    // 摇晃动画
+    if (cloudBottles.length === 0) { showToast('🌊 还没有漂流瓶哦～'); return; }
     bottleVisual.classList.add('shaking');
     setTimeout(() => bottleVisual.classList.remove('shaking'), 500);
-    // 随机选一个
-    const idx = Math.floor(Math.random() * bottles.length);
-    currentBottle = bottles[idx];
-    // 揭示
+    const idx = Math.floor(Math.random() * cloudBottles.length);
+    currentBottle = cloudBottles[idx];
     revealMsg.textContent = currentBottle.text;
     revealTime.textContent = '🕐 ' + currentBottle.time;
     revealCard.classList.remove('burning');
     revealOverlay.classList.add('open');
-    // 阅后即焚：从数组中删除
-    bottles.splice(idx, 1);
-    localStorage.setItem('xuexue_bottles', JSON.stringify(bottles));
+    // 阅后即焚：从数组中删除并同步云端
+    cloudBottles.splice(idx, 1);
+    saveToCloud();
     updateBottleBadge();
   });
 
   // 点击揭示弹窗 → 阅后即焚
   revealOverlay.addEventListener('click', () => {
     if (!currentBottle) return;
-    // 燃烧动画
     revealCard.classList.add('burning');
     setTimeout(() => {
       revealOverlay.classList.remove('open');
@@ -720,17 +761,28 @@
   });
 
   // ═══════════════════════════════════════
-  //  初始化
+  //  初始化：从云端加载数据
   // ═══════════════════════════════════════
-  updateHistoryBadge();
-  updateBottleBadge();
-  // 恢复愿望计数
-  wishCount = wishHistory.length;
-  counter.textContent = wishCount;
+  async function init() {
+    await loadFromCloud();
+    wishCount = cloudWishes.length;
+    counter.textContent = wishCount;
+    updateHistoryBadge();
+    updateBottleBadge();
+    // 初始欢迎雪花
+    setTimeout(() => { addWish('心想事成'); addWish('天天开心'); }, 600);
+    setTimeout(() => addWish('万事如意'), 1200);
+    // 定时从云端刷新（同步其他设备的变更）
+    setInterval(async () => {
+      await loadFromCloud();
+      wishCount = cloudWishes.length;
+      counter.textContent = wishCount;
+      updateHistoryBadge();
+      updateBottleBadge();
+    }, 8000);
+  }
 
-  // 初始欢迎雪花
-  setTimeout(() => { addWish('心想事成'); addWish('天天开心'); }, 600);
-  setTimeout(() => addWish('万事如意'), 1200);
+  init();
 })();
 </script>
 </body>
