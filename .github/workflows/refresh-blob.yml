@@ -1,0 +1,52 @@
+name: Refresh JSON Blob
+
+on:
+  schedule:
+    - cron: '0 */22 * * *'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read current blob
+        id: read_blob
+        run: |
+          BLOB_ID=$(grep -oP "const BLOB_ID\s*=\s*'([^']+)'" index.html | grep -oP "'[^']+'" | tr -d "'")
+          echo "blob_id=$BLOB_ID" >> $GITHUB_OUTPUT
+          DATA=$(curl -s "https://jsonblob.com/api/jsonBlob/$BLOB_ID" || echo '{"bottles":[],"wishes":[]}')
+          echo "data=$DATA" >> $GITHUB_OUTPUT
+
+      - name: Create new blob
+        id: create_blob
+        run: |
+          NEW_ID=$(curl -s -X POST "https://jsonblob.com/api/jsonBlob" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d '${{ steps.read_blob.outputs.data }}' | grep -oP '"id":"([^"]+)"' || true)
+          # jsonblob returns the blob ID in the Location header
+          RESPONSE=$(curl -s -i -X POST "https://jsonblob.com/api/jsonBlob" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d '${{ steps.read_blob.outputs.data }}')
+          NEW_ID=$(echo "$RESPONSE" | grep -i "location:" | sed 's|.*/api/jsonBlob/||' | tr -d '\r')
+          echo "new_id=$NEW_ID" >> $GITHUB_OUTPUT
+          echo "New blob ID: $NEW_ID"
+
+      - name: Update index.html
+        run: |
+          OLD_ID='${{ steps.read_blob.outputs.blob_id }}'
+          NEW_ID='${{ steps.create_blob.outputs.new_id }}'
+          sed -i "s|const BLOB_ID  = '${OLD_ID}'|const BLOB_ID  = '${NEW_ID}'|" index.html
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "🔄 自动刷新云端存储 ($(date +%Y-%m-%d))"
+          git push
