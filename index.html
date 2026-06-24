@@ -433,19 +433,21 @@
 <script>
 (function(){
   // ═══════════════════════════════════════
-  //  云端数据同步（jsonblob.com · 跨设备互通）
+  //  云端数据同步（GitHub API · 跨设备互通）
   // ═══════════════════════════════════════
-  const BLOB_ID  = '019ef7a5-08b9-7b71-8859-1d54dbd438e2';
-  const BLOB_URL = `https://jsonblob.com/api/jsonBlob/${BLOB_ID}`;
+  const TOKEN   = '__GH_TOKEN_PLACEHOLDER__';
+  const REPO    = 'dsasanim4-source/xuexue-wish';
+  const RAW_URL = `https://raw.githubusercontent.com/${REPO}/main/data/store.json`;
+  const API_URL = `https://api.github.com/repos/${REPO}/contents/data/store.json`;
 
   let cloudBottles = [];
   let cloudWishes = [];
+  let currentSha = null;
   let syncing = false;
 
-  // 从云端加载数据
   async function loadFromCloud() {
     try {
-      const res = await fetch(BLOB_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      const res = await fetch(RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       cloudBottles = data.bottles || [];
@@ -460,22 +462,35 @@
     }
   }
 
-  // 保存到云端
   async function saveToCloud() {
-    if (syncing) return;
+    if (syncing || !TOKEN || TOKEN.startsWith('__')) return; // token 未注入时跳过
     syncing = true;
     try {
-      const content = JSON.stringify({ bottles: cloudBottles, wishes: cloudWishes });
-      const res = await fetch(BLOB_URL, {
+      if (!currentSha) {
+        const getRes = await fetch(API_URL, { cache: 'no-store' });
+        if (getRes.ok) { const meta = await getRes.json(); currentSha = meta.sha; }
+      }
+      const content = JSON.stringify({ bottles: cloudBottles, wishes: cloudWishes }, null, 2);
+      const body = {
+        message: '🔄 同步数据',
+        content: btoa(unescape(encodeURIComponent(content))),
+        sha: currentSha
+      };
+      const putRes = await fetch(API_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: content
+        headers: { 'Authorization': `token ${TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+        body: JSON.stringify(body)
       });
-      if (res.ok) {
+      if (putRes.ok) {
+        const result = await putRes.json();
+        currentSha = result.content.sha;
         localStorage.setItem('xuexue_wishes', JSON.stringify(cloudWishes));
         localStorage.setItem('xuexue_bottles', JSON.stringify(cloudBottles));
+      } else if (putRes.status === 409) {
+        currentSha = null;
+        await loadFromCloud();
       }
-    } catch(e) { /* 静默失败，下次重试 */ }
+    } catch(e) { /* 静默失败 */ }
     syncing = false;
   }
 
@@ -501,16 +516,16 @@
       this.text = text;
       this.x = x ?? Math.random() * canvas.width;
       this.y = y ?? -60 - Math.random() * 200;
-      this.size = 12 + Math.random() * 6;
-      this.speedY = 0.6 + Math.random() * 1.4;
-      this.speedX = (Math.random() - 0.5) * 0.8;
-      this.wobbleAmp = 0.3 + Math.random() * 0.7;
-      this.wobbleSpeed = 0.01 + Math.random() * 0.03;
+      this.size = 14 + Math.random() * 6;
+      this.speedY = 0.2 + Math.random() * 0.35;
+      this.speedX = (Math.random() - 0.5) * 0.4;
+      this.wobbleAmp = 0.2 + Math.random() * 0.4;
+      this.wobbleSpeed = 0.008 + Math.random() * 0.02;
       this.wobbleOffset = Math.random() * Math.PI * 2;
-      this.rotation = (Math.random() - 0.5) * 0.5;
-      this.rotationSpeed = (Math.random() - 0.5) * 0.02;
-      this.opacity = 0.7 + Math.random() * 0.3;
-      this.scale = 0.8 + Math.random() * 0.4;
+      this.rotation = (Math.random() - 0.5) * 0.3;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.01;
+      this.opacity = 0.65 + Math.random() * 0.3;
+      this.scale = 0.85 + Math.random() * 0.35;
       this.frame = 0;
       this.alive = true;
       this.color = pinkColors[Math.floor(Math.random() * pinkColors.length)];
@@ -546,7 +561,7 @@
   }
 
   function addWish(text) {
-    const count = 3 + Math.floor(Math.random() * 4);
+    const count = 1 + Math.floor(Math.random() * 2); // 一次 1~2 片
     for (let i = 0; i < count; i++) {
       snowflakes.push(new Snowflake(text, Math.random() * canvas.width, -60 - Math.random() * 300));
     }
